@@ -26,28 +26,34 @@ class EmployeesController < ApplicationController
     head :no_content
   end
 
-  def salary
-    employee = Employee.find(params[:id])
-
-    gross = employee.salary.to_f
-
-    tds =
-      case employee.country
-      when "India"
-        gross * 0.10
-      when "United States"
-        gross * 0.12
+  def salary_metrics
+    if params[:country].present?
+      employees = Employee.where(country: params[:country])
+      salaries = employees.pluck(:salary).map(&:to_f)
+      if salaries.empty?
+        render json: { error: "No employees found for country #{params[:country]}" }, status: :not_found
       else
-        0
+        render json: {
+          country: params[:country],
+          min_salary: salaries.min.to_i,
+          max_salary: salaries.max.to_i,
+          average_salary: (salaries.sum / salaries.size).to_i
+        }
       end
-
-    net = gross - tds
-
-    render json: {
-      gross_salary: gross.to_i,
-      tds: tds.to_i,
-      net_salary: net.to_i
-    }
+    elsif params[:job_title].present?
+      employees = Employee.where(job_title: params[:job_title])
+      salaries = employees.pluck(:salary).map(&:to_f)
+      if salaries.empty?
+        render json: { error: "No employees found for job title #{params[:job_title]}" }, status: :not_found
+      else
+        render json: {
+          job_title: params[:job_title],
+          average_salary: (salaries.sum / salaries.size).to_i
+        }
+      end
+    else
+      render json: { error: "Must provide either country or job_title parameter" }, status: :bad_request
+    end
   end
 
   private
