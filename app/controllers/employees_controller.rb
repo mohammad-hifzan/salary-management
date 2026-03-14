@@ -26,6 +26,30 @@ class EmployeesController < ApplicationController
     head :no_content
   end
 
+  def salary
+    employee = Employee.find(params[:id])
+
+    gross = employee.salary.to_f
+
+    tds =
+      case employee.country
+      when "India"
+        gross * 0.10
+      when "United States"
+        gross * 0.12
+      else
+        0
+      end
+
+    net = gross - tds
+
+    render json: {
+      gross_salary: gross.to_i,
+      tds: tds.to_i,
+      net_salary: net.to_i
+    }
+  end
+
   def salary_metrics
     if params[:country].present?
       employees = Employee.where(country: params[:country])
